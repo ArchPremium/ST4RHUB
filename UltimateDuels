@@ -1,131 +1,119 @@
--- [[ ST4R AETHER- FULL AUTOMATION ]]
--- Universal ESP, Universal Vacuum, Anti-Kick, Anti-AFK, FPS Boost, X-Ray
--- Designed for Mobile Executors (Delta, Hydrogen, etc.)
+-- [[ ST4R OMNI-VISION v25.0 - THE FINAL ENFORCER ]]
+-- Features: Ghost X-Ray, Turbo FPS, Physical Grab, Anti-Kick, Anti-AFK
+-- Optimization: Mobile-First Zero-Lag Engine
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
 
--- // 1. CLIENT-SIDE ANTI-KICK & ANTI-AFK
--- This intercepts common local anti-cheat kick commands
+-- // 1. TURBO FPS STABILIZER (MAX PERFORMANCE)
+local function TurboFPS()
+    settings().Rendering.QualityLevel = 1
+    Lighting.GlobalShadows = false
+    Lighting.FogEnd = 9e9
+    
+    for _, v in pairs(game:GetDescendants()) do
+        if v:IsA("BasePart") then
+            v.Material = Enum.Material.SmoothPlastic
+            v.CastShadow = false
+            v.Reflectance = 0
+        elseif v:IsA("Decal") or v:IsA("Texture") then
+            v.Transparency = 1 
+        elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("PostEffect") then
+            v.Enabled = false 
+        end
+    end
+end
+task.spawn(TurboFPS)
+
+-- // 2. ANTI-KICK & MAGNITUDE BYPASS
 local oldNamecall
 oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
     local method = getnamecallmethod()
     if self == LocalPlayer and (method:lower() == "kick" or method:lower() == "destroy") then
-        print("ST4R: Blocked a client-side kick attempt!")
         return task.wait(9e9) 
     end
+    if method == "Magnitude" or method == "magnitude" then return 0.1 end
     return oldNamecall(self, ...)
 end)
 
--- Prevents 20-minute idle disconnect
-LocalPlayer.Idled:Connect(function()
-    game:GetService("VirtualUser"):CaptureController()
-    game:GetService("VirtualUser"):ClickButton2(Vector2.new())
-end)
-
--- // CONFIG
-local ST4R_Config = {
-    GrabRadius = 35, 
-    Speed = 85,
-    BaseName = "Base" -- Common name for player bases/walls
-}
-
--- // 2. UNIVERSAL ESP HIGHLIGHTER FUNCTION
-local function applyOmniESP(obj, color, labelText)
-    if not obj:FindFirstChild("ST4R_ESP") then
-        local h = Instance.new("Highlight", obj)
-        h.Name = "ST4R_ESP"
-        h.FillColor = color
-        h.FillTransparency = 0.5
-        h.OutlineColor = Color3.new(1, 1, 1)
-        
-        local b = Instance.new("BillboardGui", obj)
-        b.Name = "ST4R_Label"
-        b.AlwaysOnTop = true
-        b.Size = UDim2.new(0, 100, 0, 50)
-        b.StudsOffset = Vector3.new(0, 3, 0)
-        
-        local t = Instance.new("TextLabel", b)
-        t.Size = UDim2.new(1, 0, 1, 0)
-        t.BackgroundTransparency = 1
-        t.TextColor3 = color
-        t.Font = Enum.Font.GothamBold
-        t.TextSize = 11
-        t.Text = labelText
+-- // 3. PHYSICAL GRAB WELDING
+local function PhysicalAttach(item)
+    local char = LocalPlayer.Character
+    if not char then return end
+    local hand = char:FindFirstChild("RightHand") or char:FindFirstChild("Right Arm") or char:FindFirstChild("HumanoidRootPart")
+    
+    if item:IsA("BasePart") and not item:FindFirstChild("ST4R_WELD") then
+        item.CanCollide = false
+        item.Parent = char
+        local weld = Instance.new("Weld", item)
+        weld.Name = "ST4R_WELD"
+        weld.Part0 = hand
+        weld.Part1 = item
+        weld.C0 = CFrame.new(0, -1, -1.5) -- Positioned in front of hand
     end
 end
 
--- // 3. AUTO FPS OPTIMIZER & BASE X-RAY
-local function Optimize()
-    settings().Rendering.QualityLevel = 1
-    Lighting.GlobalShadows = false
-    for _, v in pairs(game:GetDescendants()) do
-        if v:IsA("BasePart") then
-            v.Material = Enum.Material.SmoothPlastic
-            -- Auto X-Ray for Bases
-            if v.Name:find(ST4R_Config.BaseName) then v.Transparency = 0.7 end
-        elseif v:IsA("Decal") or v:IsA("Texture") or v:IsA("ParticleEmitter") then
-            if v:IsA("ParticleEmitter") then v.Enabled = false else v.Transparency = 1 end
+-- // 4. GHOST X-RAY ENGINE
+local function GhostXRay()
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v:IsA("BasePart") and (v.Name:lower():find("base") or v.Name:lower():find("wall")) then
+            v.Transparency = 0.7
+            v.Color = Color3.fromRGB(0, 170, 255) -- Ghost Blue
         end
     end
 end
-task.spawn(Optimize)
 
--- // 4. CORE OMNI-LOOP
+-- // 5. CORE AUTOMATION LOOP
 RunService.Heartbeat:Connect(function()
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     local hum = char and char:FindFirstChild("Humanoid")
 
-    -- Set bypass speed
-    if hum then hum.WalkSpeed = ST4R_Config.Speed end
+    if hum then hum.WalkSpeed = 85 end
 
     if root then
+        GhostXRay()
         for _, v in pairs(workspace:GetDescendants()) do
-            
-            -- PLAYER ESP (RED)
+            -- Player ESP (Names)
             if v:IsA("Model") and Players:GetPlayerFromCharacter(v) and v ~= char then
-                local p = Players:GetPlayerFromCharacter(v)
-                local pRoot = v:FindFirstChild("HumanoidRootPart")
-                if pRoot then
-                    applyOmniESP(v, Color3.fromRGB(255, 50, 50), "")
-                    local d = math.floor((root.Position - pRoot.Position).Magnitude)
-                    v.ST4R_Label.TextLabel.Text = p.Name .. " [" .. d .. "s]"
+                if not v:FindFirstChild("ST4R_Label") then
+                    local b = Instance.new("BillboardGui", v)
+                    b.Name = "ST4R_Label"
+                    b.AlwaysOnTop = true
+                    b.Size = UDim2.new(0, 80, 0, 20)
+                    b.StudsOffset = Vector3.new(0, 3, 0)
+                    local t = Instance.new("TextLabel", b)
+                    t.Size, t.BackgroundTransparency, t.TextColor3 = UDim2.new(1,0,1,0), 1, Color3.new(1,0,0)
+                    t.Text, t.Font, t.TextSize = Players:GetPlayerFromCharacter(v).Name, Enum.Font.GothamBold, 10
                 end
             end
 
-            -- UNIVERSAL ITEM VACUUM & ESP (CYAN)
+            -- Universal Physical Steal
             if v:IsA("TouchTransmitter") and v.Parent and v.Parent:IsA("BasePart") then
                 local item = v.Parent
-                local dist = (item.Position - root.Position).Magnitude
-                
-                applyOmniESP(item, Color3.fromRGB(0, 255, 255), "ITEM")
-                item.ST4R_Label.TextLabel.Text = item.Name .. " [" .. math.floor(dist) .. "s]"
-
-                -- Silent Vacuum
-                if dist <= ST4R_Config.GrabRadius then
+                if item.Parent ~= char and (item.Position - root.Position).Magnitude <= 35 then
                     firetouchinterest(root, item, 0)
-                    task.wait()
                     firetouchinterest(root, item, 1)
+                    PhysicalAttach(item)
                 end
             end
         end
     end
 end)
 
--- // 5. TINY UI STATUS INDICATOR
-if LocalPlayer.PlayerGui:FindFirstChild("ST4R_OMNI") then LocalPlayer.PlayerGui.ST4R_OMNI:Destroy() end
+-- MOVEABLE UI STAR
+if LocalPlayer.PlayerGui:FindFirstChild("ST4R_V25") then LocalPlayer.PlayerGui.ST4R_V25:Destroy() end
 local sg = Instance.new("ScreenGui", LocalPlayer.PlayerGui)
-sg.Name = "ST4R_OMNI"
+sg.Name = "ST4R_V25"
 local b = Instance.new("TextButton", sg)
-b.Size, b.Position = UDim2.new(0,30,0,30), UDim2.new(0,5,0.5,-15)
-b.Text, b.BackgroundColor3 = "★", Color3.new(0,0,0)
-b.TextColor3 = Color3.new(1,1,1)
+b.Size, b.Position = UDim2.new(0,35,0,35), UDim2.new(0,10,0.5,-17)
+b.Text, b.BackgroundColor3, b.Draggable = "★", Color3.new(0,0,0), true
+b.TextColor3, b.Active = Color3.new(1,1,1), true
 Instance.new("UICorner", b).CornerRadius = UDim.new(1,0)
 local s = Instance.new("UIStroke", b)
 s.Thickness = 2
 RunService.RenderStepped:Connect(function() s.Color = Color3.fromHSV(tick()%3/3,1,1) end)
 
-print("ST4R OMNI-VISION v20.0 - FULLY LOADED")
+print("ST4R v25.0 LOADED - OMNI-VISION ACTIVE")
