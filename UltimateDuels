@@ -1,0 +1,175 @@
+-- [[ ST4R HUB v8.0 - THE ULTIMATE ENFORCER ]]
+-- Features: Auto-Grab, Auto-Secure, Auto-Bat, Stealth Jump, No-Anim, FPS Boost
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
+local LocalPlayer = Players.LocalPlayer
+
+-- // CONFIGURATION
+local ST4R_Config = {
+    ItemName = "Brain",        -- The brainrot item to steal
+    BaseName = "PlayerBase",   -- Your team's base name
+    WeaponName = "Bat",        -- Your weapon name
+    AutoGrab = false,
+    AutoSecure = false,        -- Walks to enemy and back to base
+    AutoBat = false,           -- Backstabs anyone who steals your items
+    NoAnim = false,
+    StealthJump = false,
+    PotatoMode = false,
+    Speed = 16,
+    Rainbow = true
+}
+
+-- // UI CLEANUP
+if LocalPlayer.PlayerGui:FindFirstChild("ST4R_HUB") then LocalPlayer.PlayerGui.ST4R_HUB:Destroy() end
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ST4R_HUB"
+ScreenGui.Parent = LocalPlayer.PlayerGui
+
+local Main = Instance.new("Frame")
+Main.Size = UDim2.new(0, 350, 0, 580) 
+Main.Position = UDim2.new(0.5, -175, 0.5, -290)
+Main.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+Main.BorderSizePixel = 0
+Main.Active = true
+Main.Draggable = true
+Main.Parent = ScreenGui
+
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 12)
+Corner.Parent = Main
+
+local Stroke = Instance.new("UIStroke")
+Stroke.Thickness = 4
+Stroke.Parent = Main
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 50)
+Title.BackgroundTransparency = 1
+Title.Font = Enum.Font.LuckiestGuy
+Title.Text = "ST4R HUB v8.0"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 35
+Title.Parent = Main
+
+-- // COMPONENT CREATOR
+local function createButton(name, pos, color, callback)
+    local Btn = Instance.new("TextButton")
+    Btn.Size = UDim2.new(0.8, 0, 0, 40)
+    Btn.Position = pos
+    Btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    Btn.Font = Enum.Font.GothamBold
+    Btn.Text = name .. ": OFF"
+    Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Btn.TextSize = 14
+    Btn.Parent = Main
+    
+    local BCorner = Instance.new("UICorner")
+    BCorner.Parent = Btn
+    
+    local BStroke = Instance.new("UIStroke")
+    BStroke.Thickness = 2
+    BStroke.Color = Color3.fromRGB(40, 40, 40)
+    BStroke.Parent = Btn
+    
+    local Toggled = false
+    Btn.MouseButton1Click:Connect(function()
+        Toggled = not Toggled
+        Btn.Text = name .. ": " .. (Toggled and "ON" or "OFF")
+        Btn.TextColor3 = Toggled and color or Color3.fromRGB(255, 255, 255)
+        BStroke.Color = Toggled and color or Color3.fromRGB(40, 40, 40)
+        callback(Toggled)
+    end)
+end
+
+-- // FUNCTIONAL LOGIC
+local function setPotatoMode(state)
+    if state then
+        for _, v in pairs(workspace:GetDescendants()) do
+            if v:IsA("BasePart") then v.Material = Enum.Material.SmoothPlastic v.Reflectance = 0
+            elseif v:IsA("Decal") or v:IsA("Texture") then v.Transparency = 1
+            elseif v:IsA("ParticleEmitter") then v.Enabled = false end
+        end
+        Lighting.GlobalShadows = false
+    end
+end
+
+UserInputService.JumpRequest:Connect(function()
+    if ST4R_Config.StealthJump then
+        local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if root then root.Velocity = Vector3.new(root.Velocity.X, 48, root.Velocity.Z) end
+    end
+end)
+
+-- // BUTTONS
+createButton("AUTO-GRAB (TP)", UDim2.new(0.1, 0, 0.10, 0), Color3.fromRGB(0, 255, 150), function(v) ST4R_Config.AutoGrab = v end)
+createButton("AUTO-SECURE (WALK)", UDim2.new(0.1, 0, 0.20, 0), Color3.fromRGB(0, 150, 255), function(v) ST4R_Config.AutoSecure = v end)
+createButton("AUTO-BAT DEFENSE", UDim2.new(0.1, 0, 0.30, 0), Color3.fromRGB(255, 50, 50), function(v) ST4R_Config.AutoBat = v end)
+createButton("REMOVE ANIMATIONS", UDim2.new(0.1, 0, 0.40, 0), Color3.fromRGB(200, 0, 255), function(v) ST4R_Config.NoAnim = v end)
+createButton("STEALTH HIGH JUMP", UDim2.new(0.1, 0, 0.50, 0), Color3.fromRGB(255, 255, 0), function(v) ST4R_Config.StealthJump = v end)
+createButton("POTATO MODE (FPS)", UDim2.new(0.1, 0, 0.60, 0), Color3.fromRGB(150, 150, 150), function(v) setPotatoMode(v) end)
+createButton("SPEED BYPASS", UDim2.new(0.1, 0, 0.70, 0), Color3.fromRGB(0, 255, 0), function(v) ST4R_Config.Speed = v and 85 or 16 end)
+createButton("RAINBOW UI", UDim2.new(0.1, 0, 0.80, 0), Color3.fromRGB(255, 255, 255), function(v) ST4R_Config.Rainbow = v end)
+
+-- // CORE HEARTBEAT LOOP
+RunService.Heartbeat:Connect(function()
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChild("Humanoid")
+
+    if ST4R_Config.Rainbow then
+        Stroke.Color = Color3.fromHSV(tick() % 3 / 3, 0.8, 1)
+        Title.TextColor3 = Color3.fromHSV(tick() % 3 / 3, 0.8, 1)
+    end
+
+    if hum then 
+        hum.WalkSpeed = ST4R_Config.Speed 
+        if ST4R_Config.NoAnim then for _, a in pairs(hum:GetPlayingAnimationTracks()) do a:Stop() end end
+    end
+
+    if root then
+        -- AUTO-BAT LOGIC
+        if ST4R_Config.AutoBat then
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild(ST4R_Config.ItemName) then
+                    root.CFrame = p.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+                    local w = char:FindFirstChild(ST4R_Config.WeaponName) or LocalPlayer.Backpack:FindFirstChild(ST4R_Config.WeaponName)
+                    if w then w.Parent = char w:Activate() end
+                end
+            end
+        end
+
+        -- AUTO-SECURE/WALK LOGIC
+        if ST4R_Config.AutoSecure then
+            local isHolding = char:FindFirstChild(ST4R_Config.ItemName)
+            if not isHolding then
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v.Name == ST4R_Config.ItemName and v:IsA("BasePart") then
+                        hum:MoveTo(v.Position)
+                        if (v.Position - root.Position).Magnitude < 10 then firetouchinterest(root, v, 0) end
+                        break
+                    end
+                end
+            else
+                local base = workspace:FindFirstChild(ST4R_Config.BaseName) or workspace:FindFirstChild(LocalPlayer.Name .. "Base")
+                if base then hum:MoveTo(base.Position) end
+            end
+        end
+
+        -- AUTO-GRAB LOGIC
+        if ST4R_Config.AutoGrab and not ST4R_Config.AutoSecure then
+            for _, v in pairs(workspace:GetDescendants()) do
+                if v.Name == ST4R_Config.ItemName and v:IsA("BasePart") then
+                    root.CFrame = v.CFrame * CFrame.new(0, 2, 0)
+                    firetouchinterest(root, v, 0)
+                    break
+                end
+            end
+        end
+    end
+end)
+
+print("ST4R HUB v8.0 LOADED - READY TO ENFORCE")
+
